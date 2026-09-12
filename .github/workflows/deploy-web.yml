@@ -38,6 +38,11 @@ jobs:
         run: npm run build
 
       - uses: actions/configure-pages@v5
+        with:
+          # repo has never had Pages turned on in Settings before — let this
+          # action create/enable the Pages site itself instead of only
+          # looking one up (which 404s the first time)
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
