@@ -40,6 +40,12 @@ export const products: Product[] = [
   { id: "p5", name: "Hemp-derived gummies, 25mg", spec: "10-pack, assorted flavors", pack: "CASE / 12", price: 96, stock: "LOW STOCK", hue: 150, ageGated: true },
 ]
 
+export const newArrivals: Product[] = [
+  { id: "n1", name: "Disposable vape, 5000 puff", spec: "Assorted flavors, 10-pack display", pack: "CASE / 10", price: 145, stock: "IN STOCK", hue: 275 },
+  { id: "n2", name: "Silicone dab mat, 8 inch", spec: "Heat-resistant, assorted colors", pack: "CASE / 50", price: 62, stock: "IN STOCK", hue: 300 },
+  { id: "n3", name: "Hemp pre-rolls, 1g", spec: "Terpene-infused, 20-pack display", pack: "CASE / 20", price: 118, stock: "IN STOCK", hue: 150, ageGated: true },
+]
+
 export const steps = [
   {
     n: "01",
