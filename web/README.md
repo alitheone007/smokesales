@@ -60,6 +60,52 @@ Content (copy, prices, category counts) lives entirely in `src/lib/data.ts`,
 typed and separated from presentation — swapping in a real product feed or
 CMS later is a data-layer change, not a rewrite of the UI.
 
+## Backend: Supabase
+
+Accounts, wholesale-registration applications, resale-certificate uploads,
+and newsletter signups are wired to a real Supabase project (Postgres +
+Auth + Storage), not mocked.
+
+**This is its own dedicated Supabase project** (`smokesales`, project ref
+`jtktjxmntfwbmonvzsle`, org "alitheone007's Org-Bilion") — not shared with
+any other app, so its `auth.users` table and usage quota belong to this
+project alone. This was a deliberate correction after an earlier version of
+this setup pointed at the Supabase project behind a different, unrelated
+app; don't repeat that — if this project is ever consolidated elsewhere,
+give it its own dedicated project again, not a shared one.
+
+- Every table lives in `public`, prefixed `smoke_wholesale_` (harmless here
+  since nothing else uses this project, but kept for consistency).
+- Every table has Row Level Security on — see `supabase/migration.sql`.
+- The service-role key is never used here. Only the anon/publishable key
+  ships to the browser, and everything it can do is scoped by RLS.
+
+**One-time setup:**
+1. In the Supabase dashboard for this project, open SQL Editor → New query,
+   paste the contents of [`supabase/migration.sql`](supabase/migration.sql),
+   and run it. Creates two tables (`smoke_wholesale_applications`,
+   `smoke_wholesale_newsletter`) and a private `smoke-wholesale-licenses`
+   storage bucket, all idempotent — safe to re-run. (Already applied once
+   directly against this project — re-running is just a safety net.)
+2. Copy `.env.example` to `.env.local` and fill in the project's URL and
+   anon key (already done for local dev in this checkout).
+
+The GitHub Pages deploy workflow bakes the same two values in as plain
+build-time env vars (see `.github/workflows/deploy-web.yml`) — safe because
+the anon key is designed to be public, it's what RLS is for.
+
+**What the two forms actually do now:**
+- *Create a free account* → `supabase.auth.signUp`. If the project has email
+  confirmation on (check Authentication → Providers in the dashboard),
+  accounts stay unconfirmed until the user clicks the email link.
+- *Register for wholesale pricing* → requires a signed-in user, uploads any
+  attached files to the private storage bucket under `<user_id>/…`, then
+  inserts a row into `smoke_wholesale_applications` with `status: pending`.
+  There's no admin review screen yet — approving an application today means
+  updating its `status` in the Supabase Table Editor by hand.
+- *Newsletter* → inserts into `smoke_wholesale_newsletter`; a duplicate
+  email is treated as "already subscribed," not an error.
+
 ## Run it
 
 ```
@@ -85,11 +131,16 @@ it's finished — clients read a stated roadmap as competence, not as a gap.
 
 - **Cart & checkout** — the "Add to cart" and "View cart" actions are visual
   only (a toast, a static subtotal). A real build wires this to an actual
-  cart/checkout flow (Shopify, Medusa, a custom API, or similar).
-- **Accounts & wholesale verification** — both forms show a success state on
-  submit but don't call a backend. Production needs real auth, resale
-  certificate storage, and a verification workflow (staff review queue or a
-  service like Persona/Middesk for automated business verification).
+  cart/checkout flow and a payment processor — note that Stripe, PayPal and
+  Square all restrict or prohibit vape/hemp-derived THC merchants, so this
+  needs a high-risk-friendly processor (PaymentCloud, Durango) or a B2B
+  net-terms/ACH provider (Balance), not a mainstream one.
+- **Wholesale application review** — accounts, resale-certificate uploads,
+  and applications are real (Supabase Auth + Postgres + Storage, see above),
+  but there's no admin screen yet. Approving an application means flipping
+  its `status` by hand in the Supabase Table Editor; production wants a
+  proper review queue or a service like Middesk/Persona for automated
+  business verification.
 - **Catalogue data** — categories/products are hand-written sample data.
   Production pulls from a real PIM/catalogue (headless commerce platform or
   a custom database) via the same `lib/data.ts`-shaped types.

@@ -1,13 +1,33 @@
 import { motion } from "framer-motion"
 import { type FormEvent, useState } from "react"
+import { supabase } from "../lib/supabase"
+
+type Status = { kind: "idle" } | { kind: "busy" } | { kind: "ok" } | { kind: "error"; message: string }
 
 export function Newsletter() {
-  const [sent, setSent] = useState(false)
+  const [status, setStatus] = useState<Status>({ kind: "idle" })
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setSent(true)
-    e.currentTarget.reset()
+    const form = e.currentTarget
+    const email = new FormData(form).get("newsletterEmail")
+    setStatus({ kind: "busy" })
+
+    const { error } = await supabase.from("smoke_wholesale_newsletter").insert({ email })
+
+    if (error) {
+      // a unique-constraint violation just means they're already subscribed
+      if (error.code === "23505") {
+        setStatus({ kind: "ok" })
+        form.reset()
+        return
+      }
+      setStatus({ kind: "error", message: error.message })
+      return
+    }
+
+    form.reset()
+    setStatus({ kind: "ok" })
   }
 
   return (
@@ -39,12 +59,13 @@ export function Newsletter() {
               placeholder="you@yourshop.com"
               className="w-full rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-accent"
             />
-            <button type="submit" className="btn-solid flex-none">
-              Subscribe
+            <button type="submit" disabled={status.kind === "busy"} className="btn-solid flex-none disabled:opacity-60">
+              {status.kind === "busy" ? "Subscribing…" : "Subscribe"}
             </button>
           </form>
         </motion.div>
-        {sent && <p className="mt-3 text-[12px] text-ok">Subscribed — welcome aboard.</p>}
+        {status.kind === "ok" && <p className="mt-3 text-[12px] text-ok">Subscribed — welcome aboard.</p>}
+        {status.kind === "error" && <p className="mt-3 text-[12px] text-warn">{status.message}</p>}
       </div>
     </section>
   )

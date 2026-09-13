@@ -35,6 +35,13 @@ jobs:
 
       - name: Build
         working-directory: web
+        # The anon/publishable key is meant to ship in the browser bundle —
+        # it's only usable through the Row Level Security policies in
+        # supabase/migration.sql — so it's fine as a plain workflow env var
+        # rather than a repo secret.
+        env:
+          VITE_SUPABASE_URL: https://jtktjxmntfwbmonvzsle.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_zZZbzJNtw2jPu2f8Ae7kXQ_959uXUoq
         run: npm run build
 
       - uses: actions/configure-pages@v5

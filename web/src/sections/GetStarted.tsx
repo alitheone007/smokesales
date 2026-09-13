@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { MessageCircle, UploadCloud } from "lucide-react"
 import { type FormEvent, useState } from "react"
+import { supabase } from "../lib/supabase"
 
 function Field({
   id,
@@ -35,19 +36,101 @@ function Field({
   )
 }
 
-function useFormNote() {
-  const [note, setNote] = useState<string | null>(null)
-  const submit = (message: string) => (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setNote(message)
-    e.currentTarget.reset()
-  }
-  return { note, submit }
+type Status = { kind: "idle" } | { kind: "busy" } | { kind: "ok"; message: string } | { kind: "error"; message: string }
+
+function StatusLine({ status }: { status: Status }) {
+  if (status.kind === "ok") return <p className="mt-3.5 max-w-[60ch] text-[12px] text-ok">{status.message}</p>
+  if (status.kind === "error") return <p className="mt-3.5 max-w-[60ch] text-[12px] text-warn">{status.message}</p>
+  return null
 }
 
 export function GetStarted() {
-  const signup = useFormNote()
-  const wholesale = useFormNote()
+  const [signupStatus, setSignupStatus] = useState<Status>({ kind: "idle" })
+  const [wholesaleStatus, setWholesaleStatus] = useState<Status>({ kind: "idle" })
+
+  const onSignup = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const data = new FormData(form)
+    setSignupStatus({ kind: "busy" })
+
+    const { data: signUpData, error } = await supabase.auth.signUp({
+      email: String(data.get("suEmail")),
+      password: String(data.get("suPassword")),
+      options: {
+        data: {
+          full_name: data.get("suName"),
+          store_name: data.get("suStore") || null,
+        },
+      },
+    })
+
+    if (error) {
+      setSignupStatus({ kind: "error", message: error.message })
+      return
+    }
+
+    form.reset()
+    setSignupStatus({
+      kind: "ok",
+      message: signUpData.session
+        ? "Account created — you're signed in and can check out right away."
+        : "Account created — check your email to confirm it, then come back to register for wholesale pricing.",
+    })
+  }
+
+  const onWholesale = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const data = new FormData(form)
+    setWholesaleStatus({ kind: "busy" })
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setWholesaleStatus({
+        kind: "error",
+        message: "Create a free account first (the card on the left), then come back to submit this form.",
+      })
+      return
+    }
+
+    const fileInput = form.elements.namedItem("certUpload") as HTMLInputElement | null
+    const files = fileInput?.files ? Array.from(fileInput.files) : []
+    const certificatePaths: string[] = []
+
+    for (const file of files) {
+      const path = `${user.id}/${Date.now()}-${file.name}`
+      const { error: uploadError } = await supabase.storage.from("smoke-wholesale-licenses").upload(path, file)
+      if (uploadError) {
+        setWholesaleStatus({ kind: "error", message: `Couldn't upload ${file.name}: ${uploadError.message}` })
+        return
+      }
+      certificatePaths.push(path)
+    }
+
+    const { error: insertError } = await supabase.from("smoke_wholesale_applications").insert({
+      user_id: user.id,
+      business_name: data.get("bizName"),
+      business_phone: data.get("bizPhone"),
+      business_address: data.get("bizAddress"),
+      tax_id: data.get("taxId"),
+      certificate_paths: certificatePaths,
+    })
+
+    if (insertError) {
+      setWholesaleStatus({ kind: "error", message: insertError.message })
+      return
+    }
+
+    form.reset()
+    setWholesaleStatus({
+      kind: "ok",
+      message: "Thanks — your application has been queued for review. Tax-exempt pricing unlocks within one business day.",
+    })
+  }
 
   return (
     <section id="get-started" className="py-14 md:py-20">
@@ -72,17 +155,17 @@ export function GetStarted() {
             <p className="mt-1.5 max-w-[46ch] text-[13px] text-muted">
               See live pricing and check out today. No licence or business documents required.
             </p>
-            <form onSubmit={signup.submit("Account created — you can browse and check out right away.")} className="mt-6">
+            <form onSubmit={onSignup} className="mt-6">
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <Field id="suName" label="Full name" required autoComplete="name" />
                 <Field id="suStore" label="Store name (optional)" autoComplete="organization" />
                 <Field id="suEmail" label="Email" type="email" required autoComplete="email" />
                 <Field id="suPassword" label="Password" type="password" required autoComplete="new-password" />
               </div>
-              <button type="submit" className="btn-solid mt-5">
-                Create account
+              <button type="submit" disabled={signupStatus.kind === "busy"} className="btn-solid mt-5 disabled:opacity-60">
+                {signupStatus.kind === "busy" ? "Creating account…" : "Create account"}
               </button>
-              {signup.note && <p className="mt-3.5 max-w-[60ch] text-[12px] text-ok">{signup.note}</p>}
+              <StatusLine status={signupStatus} />
             </form>
           </motion.div>
 
@@ -105,12 +188,7 @@ export function GetStarted() {
                 USUALLY VERIFIED IN 1 BUSINESS DAY
               </span>
             </div>
-            <form
-              onSubmit={wholesale.submit(
-                "Thanks — your resale certificate has been queued for review. Tax-exempt pricing unlocks within one business day.",
-              )}
-              className="mt-6"
-            >
+            <form onSubmit={onWholesale} className="mt-6">
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <Field id="bizName" label="Business name" required autoComplete="organization" />
                 <Field id="bizPhone" label="Business phone" type="tel" required autoComplete="tel" />
@@ -125,22 +203,17 @@ export function GetStarted() {
                   <input id="certUpload" name="certUpload" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple className="mt-1 w-full text-[11px]" />
                 </div>
               </div>
-              <button type="submit" className="btn-solid mt-5">
-                Submit for review
+              <button type="submit" disabled={wholesaleStatus.kind === "busy"} className="btn-solid mt-5 disabled:opacity-60">
+                {wholesaleStatus.kind === "busy" ? "Submitting…" : "Submit for review"}
               </button>
-              {wholesale.note && <p className="mt-3.5 max-w-[60ch] text-[12px] text-ok">{wholesale.note}</p>}
+              <StatusLine status={wholesaleStatus} />
             </form>
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
               <div className="flex items-center gap-2 text-[12px] text-muted">
                 <span className="h-1.5 w-1.5 flex-none rounded-full bg-ok" />
                 No Tax ID yet? Send an enquiry on WhatsApp and the team will quote you directly.
               </div>
-              <a
-                href="https://wa.me/10000000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-ghost"
-              >
+              <a href="https://wa.me/10000000000" target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 <MessageCircle size={14} />
                 Message on WhatsApp
               </a>
