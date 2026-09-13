@@ -107,27 +107,4 @@ body {
     @apply rounded-card border border-rule bg-surf;
   }
 
-  /* dichroic edge sheen — appears only on the border, on hover/focus */
-  .sheen-edge {
-    @apply relative isolate;
-  }
-  .sheen-edge::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(120deg, var(--color-sheen-a), var(--color-ok), var(--color-sheen-a));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .sheen-edge:hover::before,
-  .sheen-edge:focus-within::before {
-    opacity: 1;
-  }
 }

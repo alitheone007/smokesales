@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { GlassSwatch } from "../components/GlassSwatch"
+import { GlowCard } from "../components/GlowCard"
 import { AgeBadge } from "../components/Badge"
 import { categories } from "../lib/data"
 
@@ -30,23 +31,23 @@ export function Categories() {
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
         >
           {categories.map((c) => (
-            <motion.a
+            <motion.div
               key={c.id}
-              href="#hot"
               variants={item}
               whileHover={{ y: -4 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className="sheen-edge card group overflow-hidden"
             >
-              <GlassSwatch hue={c.hue} className="h-20 w-full" />
-              <div className="p-4">
-                <h3 className="flex items-center gap-1.5 text-[14px] text-ink">
-                  {c.name}
-                  {c.ageGated && <AgeBadge />}
-                </h3>
-                <div className="mt-1 font-mono text-[11px] text-muted">{c.count}</div>
-              </div>
-            </motion.a>
+              <GlowCard as="a" href="#hot" radius={200} className="card block overflow-hidden">
+                <GlassSwatch hue={c.hue} className="h-20 w-full" />
+                <div className="p-4">
+                  <h3 className="flex items-center gap-1.5 text-[14px] text-ink">
+                    {c.name}
+                    {c.ageGated && <AgeBadge />}
+                  </h3>
+                  <div className="mt-1 font-mono text-[11px] text-muted">{c.count}</div>
+                </div>
+              </GlowCard>
+            </motion.div>
           ))}
         </motion.div>
       </div>

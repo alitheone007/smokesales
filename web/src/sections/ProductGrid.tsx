@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { AlertTriangle, ShoppingCart } from "lucide-react"
 import { GlassSwatch } from "../components/GlassSwatch"
+import { GlowCard } from "../components/GlowCard"
 import { AgeBadge } from "../components/Badge"
 import { products } from "../lib/data"
 import { useCart } from "../lib/cart"
@@ -37,7 +38,8 @@ export function ProductGrid() {
           className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         >
           {products.map((p) => (
-            <motion.div key={p.id} variants={item} className="card overflow-hidden">
+            <motion.div key={p.id} variants={item}>
+            <GlowCard radius={200} className="card block overflow-hidden">
               <GlassSwatch hue={p.hue} className="h-32 w-full" />
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
@@ -72,6 +74,7 @@ export function ProductGrid() {
                   Add to cart
                 </motion.button>
               </div>
+            </GlowCard>
             </motion.div>
           ))}
         </motion.div>

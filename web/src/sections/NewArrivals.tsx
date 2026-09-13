@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { ShoppingCart } from "lucide-react"
 import { GlassSwatch } from "../components/GlassSwatch"
+import { GlowCard } from "../components/GlowCard"
 import { AgeBadge } from "../components/Badge"
 import { newArrivals } from "../lib/data"
 import { useCart } from "../lib/cart"
@@ -31,8 +32,8 @@ export function NewArrivals() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="card overflow-hidden"
             >
+            <GlowCard radius={200} className="card block overflow-hidden">
               <GlassSwatch hue={p.hue} className="h-32 w-full" />
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
@@ -61,6 +62,7 @@ export function NewArrivals() {
                   Add to cart
                 </motion.button>
               </div>
+            </GlowCard>
             </motion.div>
           ))}
         </div>

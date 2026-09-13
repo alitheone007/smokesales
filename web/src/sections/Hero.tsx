@@ -1,5 +1,6 @@
 import { motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion"
 import type { PointerEvent } from "react"
+import { GlowCard } from "../components/GlowCard"
 import { quickOrder } from "../lib/data"
 
 const container = {
@@ -70,8 +71,8 @@ export function Hero() {
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
-          className="sheen-edge card relative rounded-panel p-6"
         >
+        <GlowCard radius={280} className="card relative block rounded-panel p-6">
           <div className="mb-4 flex items-center justify-between">
             <span className="eyebrow !text-[11px]">Quick order</span>
             <span className="rounded-full border border-rule px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] text-ok">
@@ -97,6 +98,7 @@ export function Hero() {
           <a href="#get-started" className="btn-solid mt-4 w-full">
             View cart
           </a>
+        </GlowCard>
         </motion.div>
       </div>
     </section>

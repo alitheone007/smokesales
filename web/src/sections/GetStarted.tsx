@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { MessageCircle, UploadCloud } from "lucide-react"
 import { type FormEvent, useState } from "react"
+import { GlowCard } from "../components/GlowCard"
 import { supabase } from "../lib/supabase"
 
 function Field({
@@ -149,8 +150,8 @@ export function GetStarted() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5 }}
-            className="sheen-edge card rounded-panel p-7 md:p-8"
           >
+          <GlowCard className="card block rounded-panel p-7 md:p-8">
             <h3 className="h-display text-[20px]">Create a free account</h3>
             <p className="mt-1.5 max-w-[46ch] text-[13px] text-muted">
               See live pricing and check out today. No licence or business documents required.
@@ -167,6 +168,7 @@ export function GetStarted() {
               </button>
               <StatusLine status={signupStatus} />
             </form>
+          </GlowCard>
           </motion.div>
 
           {/* wholesale registration */}
@@ -175,8 +177,8 @@ export function GetStarted() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="sheen-edge card rounded-panel p-7 md:p-8"
           >
+          <GlowCard className="card block rounded-panel p-7 md:p-8">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="h-display text-[20px]">Register for wholesale pricing</h3>
@@ -218,6 +220,7 @@ export function GetStarted() {
                 Message on WhatsApp
               </a>
             </div>
+          </GlowCard>
           </motion.div>
         </div>
       </div>

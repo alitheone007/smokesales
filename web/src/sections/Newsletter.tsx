@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { type FormEvent, useState } from "react"
+import { GlowCard } from "../components/GlowCard"
 import { supabase } from "../lib/supabase"
 
 type Status = { kind: "idle" } | { kind: "busy" } | { kind: "ok" } | { kind: "error"; message: string }
@@ -38,8 +39,8 @@ export function Newsletter() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.5 }}
-          className="sheen-edge card flex flex-col items-start gap-5 rounded-panel p-8 md:flex-row md:items-center md:justify-between"
         >
+        <GlowCard className="card flex flex-col items-start gap-5 rounded-panel p-8 md:flex-row md:items-center md:justify-between">
           <div>
             <span className="eyebrow">Stay stocked</span>
             <h2 className="h-display mt-2 text-[22px]">New SKUs and restocks, straight to your inbox</h2>
@@ -63,6 +64,7 @@ export function Newsletter() {
               {status.kind === "busy" ? "Subscribing…" : "Subscribe"}
             </button>
           </form>
+        </GlowCard>
         </motion.div>
         {status.kind === "ok" && <p className="mt-3 text-[12px] text-ok">Subscribed — welcome aboard.</p>}
         {status.kind === "error" && <p className="mt-3 text-[12px] text-warn">{status.message}</p>}

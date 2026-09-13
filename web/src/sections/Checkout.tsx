@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { CheckCircle2, CreditCard, Loader2, QrCode } from "lucide-react"
+import { CreditCard, Loader2, QrCode } from "lucide-react"
 import QRCode from "qrcode"
 import { useEffect, useState } from "react"
+import { GlowCard } from "../components/GlowCard"
 import { useCart } from "../lib/cart"
 import { supabase } from "../lib/supabase"
 
@@ -23,6 +24,120 @@ function luhnValid(digits: string) {
   return digits.length >= 12 && sum % 10 === 0
 }
 
+function formatCardNumber(raw: string) {
+  const digits = raw.replace(/\D/g, "").slice(0, 19)
+  return digits.replace(/(.{4})/g, "$1 ").trim()
+}
+
+function formatExpiry(raw: string) {
+  const digits = raw.replace(/\D/g, "").slice(0, 4)
+  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+}
+
+const STEPS = ["Review", "Pay", "Done"] as const
+
+function stageToStep(stage: Stage): number {
+  if (stage === "done") return 2
+  if (stage === "processing" || stage === "waiting_scan") return 1
+  return 0
+}
+
+function Stepper({ stage }: { stage: Stage }) {
+  const active = stageToStep(stage)
+  return (
+    <div className="mb-8 flex items-center">
+      {STEPS.map((label, i) => (
+        <div key={label} className="flex flex-1 items-center last:flex-none">
+          <div className="flex flex-col items-center gap-1.5">
+            <motion.div
+              animate={{
+                backgroundColor: i <= active ? "var(--color-accent)" : "var(--color-surf)",
+                borderColor: i <= active ? "var(--color-accent)" : "var(--color-rule)",
+                scale: i === active ? 1.1 : 1,
+              }}
+              transition={{ duration: 0.3 }}
+              className="flex h-7 w-7 items-center justify-center rounded-full border font-mono text-[11px]"
+              style={{ color: i <= active ? "var(--color-accenton)" : "var(--color-muted)" }}
+            >
+              {i + 1}
+            </motion.div>
+            <span className={`text-[10px] ${i <= active ? "text-ink" : "text-muted"}`}>{label}</span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className="relative mx-2 h-px flex-1 bg-rule">
+              <motion.div
+                className="absolute inset-y-0 left-0 bg-accent"
+                initial={false}
+                animate={{ width: i < active ? "100%" : "0%" }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CardPreview({ number, expiry }: { number: string; expiry: string }) {
+  const digits = number.replace(/\s/g, "").padEnd(16, "•").slice(0, 16)
+  const grouped = digits.match(/.{1,4}/g)?.join("  ") ?? ""
+
+  return (
+    <motion.div
+      initial={{ rotateX: -8, opacity: 0 }}
+      animate={{ rotateX: 0, opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="relative mb-1 aspect-[1.586/1] w-full max-w-[300px] overflow-hidden rounded-2xl p-5 text-accenton"
+      style={{
+        background: "linear-gradient(135deg, var(--color-sheen-a), var(--color-accent) 55%, var(--color-ok))",
+        transformStyle: "preserve-3d",
+        perspective: 800,
+      }}
+    >
+      <div className="absolute inset-0 opacity-[0.15]" style={{ background: "radial-gradient(120% 80% at 10% 0%, #fff, transparent 60%)" }} />
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9px] tracking-[0.14em] opacity-80">TEST CARD — NOT REAL</span>
+        <CreditCard size={18} className="opacity-80" />
+      </div>
+      <div className="mt-7 font-mono text-[16px] tracking-[0.12em]">{grouped}</div>
+      <div className="mt-4 flex items-end justify-between">
+        <span className="text-[10px] opacity-80">TEST USER</span>
+        <span className="font-mono text-[12px] opacity-90">{expiry || "MM/YY"}</span>
+      </div>
+    </motion.div>
+  )
+}
+
+function AnimatedCheck() {
+  return (
+    <svg viewBox="0 0 52 52" className="h-14 w-14">
+      <motion.circle
+        cx="26"
+        cy="26"
+        r="24"
+        fill="none"
+        stroke="var(--color-ok)"
+        strokeWidth={2.5}
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      />
+      <motion.path
+        d="M15 27l7 7 15-15"
+        fill="none"
+        stroke="var(--color-ok)"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.4, delay: 0.45, ease: "easeOut" }}
+      />
+    </svg>
+  )
+}
+
 export function Checkout() {
   const { lines, subtotal, clear } = useCart()
   const [method, setMethod] = useState<Method>("mock_card")
@@ -31,6 +146,8 @@ export function Checkout() {
   const [orderId, setOrderId] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [cardNumber, setCardNumber] = useState("")
+  const [expiry, setExpiry] = useState("")
+  const [cvc, setCvc] = useState("")
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -88,7 +205,7 @@ export function Checkout() {
     const id = await createOrder("mock_card")
     if (!id) return
     setOrderId(id)
-    setTimeout(() => markPaid(id), 1200)
+    setTimeout(() => markPaid(id), 1300)
   }
 
   async function payWithQr() {
@@ -107,8 +224,11 @@ export function Checkout() {
       <section id="checkout" className="py-14 md:py-20">
         <div className="container-px">
           <p className="text-[13px] text-muted">
-            Your cart is empty. <a href="#hot" className="text-accent underline underline-offset-2">Browse products</a> to add
-            something first.
+            Your cart is empty.{" "}
+            <a href="#hot" className="text-accent underline underline-offset-2">
+              Browse products
+            </a>{" "}
+            to add something first.
           </p>
         </div>
       </section>
@@ -123,7 +243,9 @@ export function Checkout() {
           <h2 className="h-display mt-2 text-[24px]">Checkout</h2>
         </div>
 
-        <div className="card rounded-panel p-7 md:p-8">
+        <GlowCard radius={320} className="card block rounded-panel p-7 md:p-8">
+          <Stepper stage={stage} />
+
           <AnimatePresence mode="wait">
             {stage === "signed_out" && (
               <motion.div key="signed-out" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -147,7 +269,7 @@ export function Checkout() {
             )}
 
             {stage === "summary" && signedIn !== null && (
-              <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <motion.div key="summary" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
                 {signedIn === false && (
                   <div className="notice mb-5">
                     <svg viewBox="0 0 24 24" className="h-4 w-4 flex-none stroke-accent" fill="none" strokeWidth={1.8}>
@@ -165,98 +287,163 @@ export function Checkout() {
                   </div>
                 )}
 
-                <div className="mb-6 divide-y divide-rule border-y border-rule">
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+                  className="mb-6 divide-y divide-rule border-y border-rule"
+                >
                   {lines.map((l) => (
-                    <div key={l.id} className="flex justify-between py-3 text-[13px]">
+                    <motion.div
+                      key={l.id}
+                      variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
+                      className="flex justify-between py-3 text-[13px]"
+                    >
                       <span className="text-ink">
                         {l.name} <span className="text-muted">× {l.qty}</span>
                       </span>
                       <span className="font-mono text-ink">${(l.price * l.qty).toFixed(2)}</span>
-                    </div>
+                    </motion.div>
                   ))}
-                  <div className="flex justify-between py-3 text-[14px] font-medium">
-                    <span className="text-ink">Total</span>
-                    <span className="font-mono text-accent">${subtotal.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between py-3">
+                    <span className="text-[14px] font-medium text-ink">Total</span>
+                    <span className="font-mono text-[20px] font-semibold text-accent">${subtotal.toFixed(2)}</span>
                   </div>
-                </div>
+                </motion.div>
 
                 <div className="mb-5 grid grid-cols-2 gap-3">
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setMethod("mock_card")}
-                    className={`flex items-center justify-center gap-2 rounded-[7px] border py-3 text-[13px] transition-colors ${
+                    className={`relative flex items-center justify-center gap-2 overflow-hidden rounded-[7px] border py-3 text-[13px] transition-colors ${
                       method === "mock_card" ? "border-accent text-accent" : "border-rule text-muted"
                     }`}
                   >
-                    <CreditCard size={15} /> Card (test)
-                  </button>
-                  <button
+                    {method === "mock_card" && (
+                      <motion.span layoutId="method-glow" className="absolute inset-0 bg-accenton" transition={{ type: "spring", stiffness: 400, damping: 32 }} />
+                    )}
+                    <span className="relative flex items-center gap-2">
+                      <CreditCard size={15} /> Card (test)
+                    </span>
+                  </motion.button>
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setMethod("qr_test")}
-                    className={`flex items-center justify-center gap-2 rounded-[7px] border py-3 text-[13px] transition-colors ${
+                    className={`relative flex items-center justify-center gap-2 overflow-hidden rounded-[7px] border py-3 text-[13px] transition-colors ${
                       method === "qr_test" ? "border-accent text-accent" : "border-rule text-muted"
                     }`}
                   >
-                    <QrCode size={15} /> QR pay (test)
-                  </button>
+                    {method === "qr_test" && (
+                      <motion.span layoutId="method-glow" className="absolute inset-0 bg-accenton" transition={{ type: "spring", stiffness: 400, damping: 32 }} />
+                    )}
+                    <span className="relative flex items-center gap-2">
+                      <QrCode size={15} /> QR pay (test)
+                    </span>
+                  </motion.button>
                 </div>
 
-                {method === "mock_card" ? (
-                  <div className="flex flex-col gap-3">
-                    <input
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      placeholder="Card number (any valid-format test number)"
-                      inputMode="numeric"
-                      className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-accent"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <input
-                        placeholder="MM/YY"
-                        className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-accent"
-                      />
-                      <input
-                        placeholder="CVC"
-                        inputMode="numeric"
-                        className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 text-[13px] text-ink outline-none focus:border-accent"
-                      />
-                    </div>
-                    <button type="button" onClick={payWithMockCard} className="btn-solid mt-2">
-                      Pay ${subtotal.toFixed(2)} (test)
-                    </button>
-                    <p className="text-center text-[11px] text-muted">
-                      No card is charged. This validates card-number format only, for demo purposes.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-3">
-                    <button type="button" onClick={payWithQr} className="btn-solid w-full">
-                      Generate test payment QR
-                    </button>
-                    <p className="text-center text-[11px] text-muted">
-                      Generates a QR code for this order. Nothing is actually charged.
-                    </p>
-                  </div>
-                )}
+                <AnimatePresence mode="wait">
+                  {method === "mock_card" ? (
+                    <motion.div
+                      key="card-form"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex flex-col items-center gap-4"
+                    >
+                      <CardPreview number={cardNumber} expiry={expiry} />
+                      <div className="flex w-full flex-col gap-3">
+                        <input
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                          placeholder="Card number (any valid-format test number)"
+                          inputMode="numeric"
+                          className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 font-mono text-[13px] text-ink outline-none focus:border-accent"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            value={expiry}
+                            onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+                            placeholder="MM/YY"
+                            inputMode="numeric"
+                            className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 font-mono text-[13px] text-ink outline-none focus:border-accent"
+                          />
+                          <input
+                            value={cvc}
+                            onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                            placeholder="CVC"
+                            inputMode="numeric"
+                            className="rounded-[7px] border border-rule bg-canvas px-3.5 py-2.5 font-mono text-[13px] text-ink outline-none focus:border-accent"
+                          />
+                        </div>
+                        <motion.button whileTap={{ scale: 0.98 }} type="button" onClick={payWithMockCard} className="btn-solid mt-1">
+                          Pay ${subtotal.toFixed(2)} (test)
+                        </motion.button>
+                        <p className="text-center text-[11px] text-muted">
+                          No card is charged. This validates card-number format only, for demo purposes.
+                        </p>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="qr-form"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex flex-col items-center gap-3"
+                    >
+                      <motion.button whileTap={{ scale: 0.98 }} type="button" onClick={payWithQr} className="btn-solid w-full">
+                        Generate test payment QR
+                      </motion.button>
+                      <p className="text-center text-[11px] text-muted">
+                        Generates a QR code for this order. Nothing is actually charged.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
             {stage === "processing" && (
-              <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-3 py-10">
-                <Loader2 size={22} className="animate-spin text-accent" />
+              <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-3 py-14">
+                <Loader2 size={24} className="animate-spin text-accent" />
                 <p className="text-[13px] text-muted">Processing test payment…</p>
               </motion.div>
             )}
 
             {stage === "waiting_scan" && qrDataUrl && (
-              <motion.div key="waiting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 py-4">
-                <img src={qrDataUrl} alt="Test payment QR code" width={220} height={220} className="rounded-card border border-rule" />
+              <motion.div key="waiting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-5 py-4">
+                <div className="relative p-3">
+                  {/* scanner-style corner brackets */}
+                  {[
+                    "left-0 top-0 border-l-2 border-t-2 rounded-tl-lg",
+                    "right-0 top-0 border-r-2 border-t-2 rounded-tr-lg",
+                    "left-0 bottom-0 border-l-2 border-b-2 rounded-bl-lg",
+                    "right-0 bottom-0 border-r-2 border-b-2 rounded-br-lg",
+                  ].map((pos) => (
+                    <span key={pos} className={`absolute h-6 w-6 border-accent ${pos}`} />
+                  ))}
+                  <motion.div
+                    className="absolute inset-3 rounded-card border border-ok/40"
+                    animate={{ opacity: [0.3, 0.8, 0.3] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <img src={qrDataUrl} alt="Test payment QR code" width={220} height={220} className="relative rounded-card" />
+                </div>
+                <div className="flex items-center gap-1.5 text-[12px] text-muted">
+                  <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-ok" />
+                  Waiting for test scan…
+                </div>
                 <p className="max-w-[38ch] text-center text-[12px] text-muted">
                   Order #{orderId?.slice(0, 8)} · ${subtotal.toFixed(2)} · test mode, no real funds move.
                 </p>
-                <button type="button" onClick={() => orderId && markPaid(orderId)} className="btn-solid">
+                <motion.button whileTap={{ scale: 0.98 }} type="button" onClick={() => orderId && markPaid(orderId)} className="btn-solid">
                   Simulate scan &amp; confirm payment
-                </button>
+                </motion.button>
               </motion.div>
             )}
 
@@ -267,7 +454,7 @@ export function Checkout() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center gap-3 py-8 text-center"
               >
-                <CheckCircle2 size={32} className="text-ok" />
+                <AnimatedCheck />
                 <h3 className="h-display text-[18px]">Order confirmed</h3>
                 <p className="max-w-[38ch] text-[13px] text-muted">
                   Order #{orderId?.slice(0, 8)} is marked paid in test mode. In production this is the point a real
@@ -279,7 +466,7 @@ export function Checkout() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </GlowCard>
       </div>
     </section>
   )
