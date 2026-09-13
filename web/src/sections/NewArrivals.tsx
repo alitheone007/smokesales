@@ -3,10 +3,12 @@ import { ShoppingCart } from "lucide-react"
 import { GlassSwatch } from "../components/GlassSwatch"
 import { AgeBadge } from "../components/Badge"
 import { newArrivals } from "../lib/data"
+import { useCart } from "../lib/cart"
 import { useToast } from "../lib/toast"
 
 export function NewArrivals() {
   const { show } = useToast()
+  const { add } = useCart()
 
   return (
     <section className="py-14 md:py-20">
@@ -49,7 +51,10 @@ export function NewArrivals() {
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => show(`Added "${p.name}" to cart`)}
+                  onClick={() => {
+                    add({ id: p.id, name: p.name, price: p.price })
+                    show(`Added "${p.name}" to cart`)
+                  }}
                   className="btn-solid w-full"
                 >
                   <ShoppingCart size={14} />

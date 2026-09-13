@@ -75,7 +75,20 @@ export function Footer() {
         </p>
         <div className="mt-4 flex flex-wrap justify-between gap-2.5 text-[11px] text-muted">
           <span>© 2026 Smoke Wholesale. All rights reserved.</span>
-          <span>Concept build — placeholder catalogue for layout purposes.</span>
+          <span>
+            Concept build — placeholder catalogue for layout purposes. ·{" "}
+            <a
+              href="#admin"
+              onClick={(e) => {
+                e.preventDefault()
+                window.location.hash = "admin"
+                window.location.reload()
+              }}
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              Admin
+            </a>
+          </span>
         </div>
       </div>
     </footer>

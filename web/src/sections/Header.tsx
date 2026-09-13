@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion"
-import { Menu, X } from "lucide-react"
+import { Menu, ShoppingCart, X } from "lucide-react"
 import { useState } from "react"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { useCart } from "../lib/cart"
 
 const NAV_LINKS = [
   { href: "#categories", label: "Catalogue" },
@@ -15,6 +16,7 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { scrollY } = useScroll()
+  const { count, setOpen: setCartOpen } = useCart()
 
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 8))
 
@@ -38,6 +40,19 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-rule text-ink"
+          >
+            <ShoppingCart size={16} />
+            {count > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-mono text-[9px] text-accenton">
+                {count}
+              </span>
+            )}
+          </button>
           <ThemeToggle />
           <a href="#signin" className="btn-ghost hidden sm:inline-flex">
             Sign in

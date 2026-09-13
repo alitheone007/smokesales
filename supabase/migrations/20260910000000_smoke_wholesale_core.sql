@@ -1,12 +1,6 @@
--- Smoke Wholesale tables, added to the shared Supabase project used by the
--- real estate app. Kept in the `public` schema (Supabase's REST API only
--- exposes schemas turned on in Settings > API, and changing that requires
--- dashboard/Management API access this migration doesn't have) but every
--- table is prefixed smoke_wholesale_ so it can't collide with the real
--- estate app's own tables, and each has its own RLS policies.
---
--- Run this once in the Supabase dashboard: SQL Editor -> New query -> paste
--- this whole file -> Run. Safe to re-run (every statement is idempotent).
+-- Core Smoke Wholesale tables: customer applications, newsletter signups,
+-- and the private storage bucket for resale-certificate uploads. Dedicated
+-- Supabase project (jtktjxmntfwbmonvzsle) — not shared with any other app.
 
 create table if not exists public.smoke_wholesale_applications (
   id uuid primary key default gen_random_uuid(),

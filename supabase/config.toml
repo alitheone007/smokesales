@@ -1,0 +1,5 @@
+# Minimal Supabase CLI project config — enough for the GitHub integration
+# (or `supabase link` / `supabase db push`) to recognize this as a linked
+# project and apply migrations/ in order. Not used for local `supabase start`
+# (no local dev stack configured here).
+project_id = "jtktjxmntfwbmonvzsle"
