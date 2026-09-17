@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion"
 import { CreditCard, Loader2, QrCode } from "lucide-react"
 import QRCode from "qrcode"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { GlowCard } from "../components/GlowCard"
+import { useAuth } from "../lib/auth"
 import { useCart } from "../lib/cart"
 import { supabase } from "../lib/supabase"
 
@@ -148,16 +149,10 @@ export function Checkout() {
   const [cardNumber, setCardNumber] = useState("")
   const [expiry, setExpiry] = useState("")
   const [cvc, setCvc] = useState("")
-  const [signedIn, setSignedIn] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)))
-  }, [])
+  const { user } = useAuth()
+  const signedIn = Boolean(user)
 
   async function createOrder(paymentMethod: Method) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
     if (!user) {
       setStage("signed_out")
       return null
@@ -268,7 +263,7 @@ export function Checkout() {
               </motion.div>
             )}
 
-            {stage === "summary" && signedIn !== null && (
+            {stage === "summary" && (
               <motion.div key="summary" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
                 {signedIn === false && (
                   <div className="notice mb-5">

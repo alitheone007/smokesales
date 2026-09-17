@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion"
-import { Menu, ShoppingCart, X } from "lucide-react"
+import { LogOut, Menu, ShoppingCart, X } from "lucide-react"
 import { useState } from "react"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { useAuth } from "../lib/auth"
 import { useCart } from "../lib/cart"
 
 const NAV_LINKS = [
@@ -17,6 +18,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false)
   const { scrollY } = useScroll()
   const { count, setOpen: setCartOpen } = useCart()
+  const { user, setSignInOpen, signOut } = useAuth()
 
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 8))
 
@@ -54,12 +56,28 @@ export function Header() {
             )}
           </button>
           <ThemeToggle />
-          <a href="#signin" className="btn-ghost hidden sm:inline-flex">
-            Sign in
-          </a>
-          <a href="#get-started" className="btn-solid hidden sm:inline-flex">
-            Create account
-          </a>
+
+          {user ? (
+            <div className="hidden items-center gap-2.5 sm:flex">
+              <span className="max-w-[140px] truncate text-[12px] text-muted" title={user.email ?? undefined}>
+                {user.email}
+              </span>
+              <button type="button" onClick={() => signOut()} className="btn-ghost" aria-label="Sign out">
+                <LogOut size={13} />
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <>
+              <button type="button" onClick={() => setSignInOpen(true)} className="btn-ghost hidden sm:inline-flex">
+                Sign in
+              </button>
+              <a href="#get-started" className="btn-solid hidden sm:inline-flex">
+                Create account
+              </a>
+            </>
+          )}
+
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -92,9 +110,29 @@ export function Header() {
                   {l.label}
                 </a>
               ))}
-              <a href="#signin" onClick={() => setMenuOpen(false)} className="py-3 text-[13px] text-ink">
-                Sign in
-              </a>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    signOut()
+                  }}
+                  className="flex items-center gap-1.5 py-3 text-left text-[13px] text-ink"
+                >
+                  <LogOut size={13} /> Sign out ({user.email})
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setSignInOpen(true)
+                  }}
+                  className="py-3 text-left text-[13px] text-ink"
+                >
+                  Sign in
+                </button>
+              )}
             </div>
           </motion.nav>
         )}

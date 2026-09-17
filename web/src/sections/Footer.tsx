@@ -1,3 +1,5 @@
+import { useAuth } from "../lib/auth"
+
 const columns = [
   {
     title: "Shop",
@@ -12,7 +14,6 @@ const columns = [
     links: [
       { label: "Create an account", href: "#get-started" },
       { label: "Wholesale registration", href: "#get-started" },
-      { label: "Sign in", href: "#signin" },
     ],
   },
   {
@@ -36,8 +37,10 @@ const columns = [
 ]
 
 export function Footer() {
+  const { user, setSignInOpen, signOut } = useAuth()
+
   return (
-    <footer id="signin" className="border-t border-rule bg-surf py-11">
+    <footer className="border-t border-rule bg-surf py-11">
       <div className="container-px">
         <div className="mb-7 grid gap-7 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr]">
           <div>
@@ -60,6 +63,27 @@ export function Footer() {
                     </a>
                   </li>
                 ))}
+                {col.title === "Account" && (
+                  <li>
+                    {user ? (
+                      <button
+                        type="button"
+                        onClick={() => signOut()}
+                        className="text-[12px] text-muted transition-colors hover:text-ink"
+                      >
+                        Sign out ({user.email})
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSignInOpen(true)}
+                        className="text-[12px] text-muted transition-colors hover:text-ink"
+                      >
+                        Sign in
+                      </button>
+                    )}
+                  </li>
+                )}
               </ul>
             </div>
           ))}
