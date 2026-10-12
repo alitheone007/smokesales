@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { AlertTriangle, ShoppingCart } from "lucide-react"
-import { GlassSwatch } from "../components/GlassSwatch"
+import { FeaturedProductImage } from "../components/FeaturedProductImage"
+import { featuredImages } from "../lib/featuredImages"
 import { GlowCard } from "../components/GlowCard"
 import { AgeBadge } from "../components/Badge"
 import { products } from "../lib/data"
@@ -18,7 +19,7 @@ export function ProductGrid() {
   const { add } = useCart()
 
   return (
-    <section id="hot" className="py-14 md:py-20">
+    <section id="hot" className="scroll-mt-24 py-14 md:py-20">
       <div className="container-px">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -38,10 +39,10 @@ export function ProductGrid() {
           className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         >
           {products.map((p) => (
-            <motion.div key={p.id} variants={item}>
-            <GlowCard radius={200} className="card block overflow-hidden">
-              <GlassSwatch hue={p.hue} className="h-32 w-full" />
-              <div className="p-4">
+            <motion.div key={p.id} variants={item} className="h-full">
+            <GlowCard radius={200} className="card flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
+              <FeaturedProductImage {...featuredImages[p.id]} hue={p.hue} label="Featured pick" />
+              <div className="flex flex-1 flex-col p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span
                     className={`font-mono text-[9px] tracking-[0.1em] ${
@@ -52,7 +53,7 @@ export function ProductGrid() {
                   </span>
                   <span className="font-mono text-[10px] text-muted">{p.pack}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[14px] text-ink">
+                <div className="flex min-h-10 items-start gap-1.5 text-[14px] font-medium text-ink">
                   {p.name}
                   {p.ageGated && <AgeBadge />}
                 </div>
@@ -68,7 +69,7 @@ export function ProductGrid() {
                     add({ id: p.id, name: p.name, price: p.price })
                     show(`Added "${p.name}" to cart`)
                   }}
-                  className="btn-solid w-full"
+                  className="btn-solid mt-auto w-full"
                 >
                   <ShoppingCart size={14} />
                   Add to cart
