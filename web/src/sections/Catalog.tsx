@@ -45,7 +45,10 @@ export function Catalog() {
   useEffect(() => {
     if (loading || window.location.hash !== "#catalog") return
     window.requestAnimationFrame(() => {
-      document.getElementById("catalog")?.scrollIntoView()
+      const catalog = document.getElementById("catalog")
+      if (!catalog) return
+      const top = window.scrollY + catalog.getBoundingClientRect().top - 96
+      window.scrollTo(0, Math.max(0, top))
     })
   }, [loading])
 
