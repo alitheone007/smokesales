@@ -76,7 +76,7 @@ export function Catalog() {
             <span className="eyebrow">Local product library</span>
             <h2 className="h-display mt-2 text-[28px]">Full catalogue</h2>
             <p className="mt-1.5 text-[13px] text-muted">
-              {loading ? "Loading catalogue…" : `${filtered.toLocaleString()} of ${products.length.toLocaleString()} products`}
+              {loading ? "Loading catalogue…" : `${filtered.length.toLocaleString()} of ${products.length.toLocaleString()} products`}
             </p>
           </div>
           <p className="max-w-[48ch] text-[12px] leading-relaxed text-muted">
