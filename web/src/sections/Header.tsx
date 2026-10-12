@@ -6,7 +6,7 @@ import { useAuth } from "../lib/auth"
 import { useCart } from "../lib/cart"
 
 const NAV_LINKS = [
-  { href: "#categories", label: "Catalogue" },
+  { href: "#catalog", label: "Catalogue" },
   { href: "#hot", label: "Hot this week" },
   { href: "#how", label: "How it works" },
   { href: "#get-started", label: "Create account" },

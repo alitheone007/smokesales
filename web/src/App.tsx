@@ -6,6 +6,7 @@ import { TopBar } from "./components/TopBar"
 import { AuthProvider } from "./lib/auth"
 import { CartProvider } from "./lib/cart"
 import { Categories } from "./sections/Categories"
+import { Catalog } from "./sections/Catalog"
 import { Checkout } from "./sections/Checkout"
 import { FAQ } from "./sections/FAQ"
 import { Footer } from "./sections/Footer"
@@ -29,6 +30,7 @@ export default function App() {
             <Hero />
             <TrustStrip />
             <Categories />
+            <Catalog />
             <NewArrivals />
             <ProductGrid />
             <HowItWorks />

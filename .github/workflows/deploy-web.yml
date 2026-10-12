@@ -8,10 +8,7 @@ on:
       - ".github/workflows/deploy-web.yml"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -20,18 +17,29 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
         working-directory: web
         run: npm ci
+
+      - name: Verify local catalogue artifact
+        working-directory: web
+        shell: bash
+        run: |
+          node -e 'const fs=require("node:fs"); const p=JSON.parse(fs.readFileSync("public/catalog/products.json","utf8")); const s=JSON.parse(fs.readFileSync("public/catalog/summary.json","utf8")); const images=fs.readdirSync("public/catalog/images").length; if(p.products.length!==s.products||images!==s.uniqueImageFiles||s.missingFiles!==0) throw new Error(`Catalogue validation failed: products=${p.products.length}, images=${images}, missing=${s.missingFiles}`); console.log(`Verified ${p.products.length} products and ${images} images`);'
 
       - name: Build
         working-directory: web
@@ -58,6 +66,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
