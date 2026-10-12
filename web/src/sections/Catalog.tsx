@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ExternalLink, ImageOff, Search } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useState } from "react"
 
 type CatalogProduct = {
   id: string
@@ -25,6 +25,13 @@ export function Catalog() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+
+  useLayoutEffect(() => {
+    if (window.location.hash !== "#catalog") return
+    window.requestAnimationFrame(() => {
+      document.getElementById("catalog")?.scrollIntoView()
+    })
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -59,7 +66,7 @@ export function Catalog() {
   const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   return (
-    <section id="catalog" className="py-14 md:py-20">
+    <section id="catalog" className="scroll-mt-24 py-14 md:py-20">
       <div className="container-px">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
