@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ExternalLink, ImageOff, Search } from "lucide-react"
-import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 type CatalogProduct = {
   id: string
@@ -26,13 +26,6 @@ export function Catalog() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  useLayoutEffect(() => {
-    if (window.location.hash !== "#catalog") return
-    window.requestAnimationFrame(() => {
-      document.getElementById("catalog")?.scrollIntoView()
-    })
-  }, [])
-
   useEffect(() => {
     const controller = new AbortController()
     fetch(`${baseUrl}catalog/products.json`, { signal: controller.signal })
@@ -48,6 +41,13 @@ export function Catalog() {
       .finally(() => setLoading(false))
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    if (loading || window.location.hash !== "#catalog") return
+    window.requestAnimationFrame(() => {
+      document.getElementById("catalog")?.scrollIntoView()
+    })
+  }, [loading])
 
   const categories = useMemo(
     () => ["All categories", ...Array.from(new Set(products.map((product) => product.category))).sort()],
